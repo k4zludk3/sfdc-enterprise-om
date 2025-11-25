@@ -25,4 +25,4 @@ jobs:
 
       - name: Run PMD Static Analysis
         run: |
-          ./pmd-bin-6.55.0/bin/run.sh pmd -d force-app -R rulesets/apex/quickstart.xml -f text
+          ./pmd-bin-6.55.0/bin/run.sh pmd -d force-app -R pmd-ruleset.xml -f text

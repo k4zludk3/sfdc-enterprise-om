@@ -1,5 +1,3 @@
 public class CustomException extends Exception {
-    public CustomException() {
-        
-    }
+    //Custom exception implementation
 }
