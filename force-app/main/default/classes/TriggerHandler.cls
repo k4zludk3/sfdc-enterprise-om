@@ -6,6 +6,7 @@
  * @author Lucas Duque
  * @group Framework
  */
+@SuppressWarnings('PMD.EmptyStatementBlock')
 public virtual class TriggerHandler implements ITriggerHandler {
     public virtual void beforeInsert(List<SObject> newRecords) {}
     public virtual void beforeUpdate(Map<Id, SObject> newItems, Map<Id, SObject> oldItems) {}
