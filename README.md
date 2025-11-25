@@ -1,9 +1,6 @@
-````markdown
 # Salesforce Enterprise Order Management Architecture
 
-[![Salesforce](https://img.shields.io/badge/Platform-Salesforce-blue.svg)](https://developer.salesforce.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
+[![Salesforce](https://img.shields.io/badge/Platform-Salesforce-blue.svg)](https://developer.salesforce.com/) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
 
 ## 📖 Overview
 This repository serves as a **Reference Architecture** for a scalable, enterprise-grade Salesforce application. It moves beyond standard "Trigger Logic" to implement a robust **MVCS (Model-View-Controller-Service)** architecture.
@@ -132,7 +129,7 @@ force-app/main/default/
 
 ```bash
 # 1. Clone the repository
-git clone [https://github.com/YOUR_USER/sfdc-enterprise-order-management.git](https://github.com/YOUR_USER/sfdc-enterprise-order-management.git)
+git clone [https://github.com/k4zludk3/sfdc-enterprise-om.git](https://github.com/k4zludk3/sfdc-enterprise-om.git)
 
 # 2. Deploy source
 sfdx force:source:deploy -p force-app
