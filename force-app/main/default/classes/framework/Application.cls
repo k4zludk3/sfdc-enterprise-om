@@ -2,7 +2,7 @@
  * @description The Central Factory for the Enterprise Architecture.
  * Handles Dependency Injection and Mocking.
  */
-@SupressWarnings('PMD.FieldNamingConventions')
+@SuppressWarnings('PMD.FieldNamingConventions')
 public inherited sharing class Application {
    
     //The Unit of Work Factory

@@ -1,4 +1,5 @@
 @IsTest
+@SuppressWarnings('PMD.ExcessiveParameterList')
 public class MockProvider implements System.StubProvider {
     
     // This holds the method name -> return value mapping

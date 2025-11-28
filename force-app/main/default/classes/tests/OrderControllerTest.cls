@@ -2,7 +2,7 @@
 public class OrderControllerTest {
     
     @isTest
-    @SupressWarnings('PMD.AvoidHardcodingId')
+    @SuppressWarnings('PMD.AvoidHardcodingId')
     static void getRecentOrders_UsingStub() {
         // Create fake data
         Order o = new Order(
