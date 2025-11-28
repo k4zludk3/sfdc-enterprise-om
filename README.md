@@ -1,24 +1,28 @@
 # Salesforce Enterprise Order Management Architecture
 
-[![Salesforce](https://img.shields.io/badge/Platform-Salesforce-blue.svg)](https://developer.salesforce.com/) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
+[![Salesforce](https://img.shields.io/badge/Platform-Salesforce-blue.svg)](https://developer.salesforce.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+![Build](https://img.shields.io/badge/build-passing-brightgreen.svg)
+![PMD](https://img.shields.io/badge/Static%20Analysis-PMD-blue)
 
 ## 📖 Overview
-This repository serves as a **Reference Architecture** for a scalable, enterprise-grade Salesforce application. It moves beyond standard "Trigger Logic" to implement a robust **MVCS (Model-View-Controller-Service)** architecture.
+This repository is a reference implementation of an enterprise-grade Order Management architecture on Salesforce. It goes beyond simple triggers to adopt a layered MVCS (Model, View, Controller, Service) approach with domain logic, patterns, testability, and loose coupling.
 
-The project simulates a high-volume **Order Processing Engine** that handles validation, recursion control, and dynamic pricing algorithms without tight coupling.
+The solution simulates a high-volume Order Processing Engine that performs validation, recursion control, message-based updates, and dynamic pricing via Strategy/Factory patterns. It includes LWC for UI, Platform Events for decoupling, PMD for static code analysis, and Jest for LWC tests.
 
-### 🎯 Objectives
-* Demonstrate **Separation of Concerns (SoC)** between Triggers, Domain logic, and Business Services.
-* Implement **GoF Design Patterns** (Strategy, Factory, Template Method) in Apex.
-* Adhere to **SOLID Principles**, specifically the Open/Closed Principle and Interface Segregation.
-* Showcase **Enterprise Best Practices** (Recursion Guards, Error Handling, Security).
+### 🎯 Goals
+- Separation of Concerns (Triggers → Domain → Services → Patterns)
+- Implement GoF Design Patterns (Strategy, Factory) in Apex
+- Adhere to SOLID principles (Open/Closed, Interface Segregation)
+- Enterprise safeguards (recursion guards, error handling, logging)
+- CI-friendly quality gates (PMD), unit tests, and message-driven design
 
 ---
 
-## 🏗 Architectural Design
+## 🏗 Architecture
 
-### The Execution Flow
-The system utilizes a **Trigger Framework** to route execution. The logic flows from the Context-Aware layers (Trigger/Domain) to the Context-Agnostic layers (Service/Strategy).
+### Execution Flow
+A Trigger Framework routes platform events and DML contexts to a domain handler, which orchestrates the service layer. Pricing is resolved at runtime using the Strategy pattern.
 
 ```mermaid
 sequenceDiagram
@@ -32,13 +36,13 @@ sequenceDiagram
 
     SF->>Trig: Fire Trigger (After Update)
     Trig->>Disp: run(new OrderDomain())
-    Note over Disp: Detects Context (AfterUpdate)
+    Note over Disp: Detect Context (AfterUpdate)
     Disp->>Dom: afterUpdate(records)
     Dom->>Svc: calculatePricing(records)
     
     loop For Each Record
         Svc->>Rec: isRecordProcessed(Id)?
-        alt Is New Context
+        alt First time this tx
             Rec-->>Svc: False (Proceed)
             Svc->>Factory: getStrategy(AccountType)
             Factory-->>Svc: Returns VIP/Standard Strategy
@@ -49,47 +53,28 @@ sequenceDiagram
     end
     
     Svc->>SF: Update Records (DML)
-````
+```
 
 ### Layer Breakdown
 
 | Layer | Class | Responsibility |
 | :--- | :--- | :--- |
-| **Interface** | `ITriggerHandler` | Defines the contract for all domain handlers. |
-| **Dispatcher** | `TriggerDispatcher` | Routes Trigger context (Insert/Update) to the correct method. |
-| **Domain** | `OrderDomain` | **"The Waiter"**. Handles validation and dirty data. Delegates to Service. |
-| **Service** | `OrderService` | **"The Chef"**. Handles pure business logic and database orchestration. |
-| **Pattern** | `IPricingStrategy` | **Strategy Pattern**. Interface for dynamic algorithms. |
+| Interface | `framework/ITriggerHandler.cls` | Contract for domain handlers |
+| Dispatcher | `framework/TriggerDispatcher.cls` | Maps trigger contexts to methods |
+| Base Handler | `framework/TriggerHandler.cls` | Virtual base; override only what you need |
+| Domain | `domain/OrderDomain.cls` | Validation, orchestration, delegates to service |
+| Service | `service/OrderService.cls` | Business logic, DML orchestration |
+| Strategy Interface | `patterns/IPricingStrategy.cls` | Strategy contract |
+| Strategy Impl | `patterns/VipPriceStrategy.cls`, `patterns/StandardPriceStrategy.cls` | Concrete algorithms |
+| Factory | `patterns/PricingStrategyFactory.cls` | Resolves strategy by context |
+| Utilities | `utils/Logger.cls`, `utils/RecursionCheck.cls` | Error handling, recursion guard |
+| Selector | `OrderSelector.cls` | Query isolation (selector layer) |
+| Controller | `OrderController.cls` | API/UI-facing controller/stub |
+| Messaging | `messageChannels/OrderMessageChannel.messageChannel-meta.xml` | LMS channel for LWC |
+| Events | `objects/Order_Notification__e/*` | Platform Event for decoupling |
+| LWC | `lwc/orderList/*` | Example UI list, Jest tests |
 
------
-
-## 🛠 Key Technical Implementations
-
-### 1\. Lean Trigger Framework (Virtual Inheritance)
-
-Instead of forcing the Domain class to implement every method of the `ITriggerHandler` interface, I utilized a **Virtual Base Class** (`TriggerHandler`).
-
-  * **Why?** This adheres to the **Interface Segregation Principle**. The `OrderDomain` only overrides the methods it needs (e.g., `afterUpdate`), keeping the code clean and readable.
-
-### 2\. Strategy & Factory Pattern
-
-To avoid complex `If/Else` chains for pricing logic (e.g., VIP vs. Standard vs. Employee), I implemented the **Strategy Pattern**.
-
-  * **Why?** This adheres to the **Open/Closed Principle**. We can add a new "Black Friday" pricing strategy without modifying the existing, tested Service code.
-
-### 3\. Recursion Guard
-
-An `OrderService` update often triggers the `OrderTrigger` again, leading to infinite loops and `Stack Depth` exceptions.
-
-  * **Solution:** Implemented `RecursionCheck.cls` using a `static Set<Id>`.
-  * **Benefit:** Ensures a record is processed exactly once per transaction context.
-
-### 4\. Security & Sharing
-
-  * **`inherited sharing`**: Used on Utility/Service classes (`TriggerDispatcher`, `PricingStrategyFactory`) to dynamically respect the caller's security context (e.g., LWC vs. Batch).
-  * **`with sharing`**: Enforced on Logic classes (`VipPricingStrategy`) to ensure Record-Level Security is respected.
-
------
+---
 
 ## 📂 Project Structure
 
@@ -97,79 +82,237 @@ An `OrderService` update often triggers the `OrderTrigger` again, leading to inf
 force-app/main/default/
 ├── classes/
 │   ├── framework/
-│   │   ├── ITriggerHandler.cls       # Interface Contract
-│   │   ├── TriggerHandler.cls        # Virtual Base Class
-│   │   └── TriggerDispatcher.cls     # Logic Router
+│   │   ├── ITriggerHandler.cls
+│   │   ├── TriggerHandler.cls
+│   │   └── TriggerDispatcher.cls
 │   ├── domain/
-│   │   └── OrderDomain.cls           # Validation & Delegation
+│   │   └── OrderDomain.cls
 │   ├── service/
-│   │   └── OrderService.cls          # Business Logic
+│   │   └── OrderService.cls
 │   ├── patterns/
-│   │   ├── IPricingStrategy.cls      # Strategy Interface
-│   │   ├── PricingStrategyFactory.cls# Factory implementation
-│   │   ├── VipPricingStrategy.cls    # Concrete Algorithm
-│   │   └── StandardPricingStrategy.cls
-│   └── utils/
-│       ├── Logger.cls                # Error Handling Wrapper
-│       └── RecursionCheck.cls        # Loop Prevention
-└── triggers/
-    └── OrderTrigger.trigger          # One-line Trigger
+│   │   ├── IPricingStrategy.cls
+│   │   ├── PricingStrategyFactory.cls
+│   │   ├── VipPriceStrategy.cls
+│   │   └── StandardPriceStrategy.cls
+│   ├── utils/
+│   │   ├── Logger.cls
+│   │   └── RecursionCheck.cls
+│   ├── OrderController.cls
+│   ├── OrderSelector.cls
+│   ├── IOrderService.cls
+│   ├── IOrderSelector.cls
+│   ├── CustomException.cls
+│   ├── Application.cls
+│   └── tests/
+│       └── OrderControllerTest.cls
+├── lwc/
+│   └── orderList/
+│       ├── orderList.html
+│       ├── orderList.js
+│       ├── orderList.js-meta.xml
+│       └── __tests__/orderList.test.js
+├── messageChannels/
+│   └── OrderMessageChannel.messageChannel-meta.xml
+├── objects/
+│   └── Order_Notification__e/
+│       ├── Order_Notification__e.object-meta.xml
+│       └── fields/
+│           ├── Order_Id__c.field-meta.xml
+│           └── Type__c.field-meta.xml
+├── triggers/
+│   └── OrderTrigger.trigger
+└── scripts/
+    ├── apex/hello.apex
+    └── soql/account.soql
 ```
 
------
+---
 
-## 🚀 Deployment & Testing
+## 🧩 Key Design Decisions
 
-### Prerequisite
+1) Lean Trigger Framework (Virtual Base Class)
+- Domain handlers extend `TriggerHandler` and override only relevant contexts (e.g., `afterUpdate`). Reduces noise and adheres to Interface Segregation.
 
-  * Salesforce CLI (SFDX) installed.
-  * Visual Studio Code.
+2) Strategy + Factory for Pricing
+- `IPricingStrategy` defines the contract; `VipPriceStrategy` and `StandardPriceStrategy` implement algorithms.
+- `PricingStrategyFactory` selects the strategy based on input context (e.g., Account/Order type).
+- Open/Closed Principle: add a new strategy (e.g., BlackFridayPriceStrategy) without modifying service code.
 
-### Deploy to Scratch Org / Sandbox
+3) Recursion Guard
+- `RecursionCheck` uses static state to ensure a record is processed once per transaction, preventing loops from trigger → DML → trigger.
 
+4) Security Model
+- `with sharing` for business logic where record access must be respected.
+- `inherited sharing` for utilities/factories/dispatchers to run in caller’s context (LWC vs. Batch).
+
+5) Error Handling and Logging
+- `Logger.cls` centralizes logging, making it simpler to add structured logs and future observability integrations.
+
+6) Selector and Controller Layers
+- `OrderSelector` isolates SOQL, helping testing and reuse.
+- `OrderController` provides a façade for UI/API; the test `OrderControllerTest.cls` demonstrates unit test structure.
+
+---
+
+## 🖥 LWC Overview
+
+- `orderList` demonstrates basic UI interaction and wiring.
+- Uses Lightning Message Service with `OrderMessageChannel` for decoupled UI updates.
+- Tested with Jest (`__tests__/orderList.test.js`).
+
+Run LWC tests locally:
 ```bash
-# 1. Clone the repository
-git clone [https://github.com/k4zludk3/sfdc-enterprise-om.git](https://github.com/k4zludk3/sfdc-enterprise-om.git)
-
-# 2. Deploy source
-sfdx force:source:deploy -p force-app
+npm install
+npm run test:unit
 ```
 
-### Verify Logic (Anonymous Apex)
+---
 
-Run the following script in the Developer Console to verify the Strategy Pattern and Recursion Guard:
+## 🔧 Tooling and Quality
 
-```java
-// Create a VIP Order
+- PMD Static Analysis: GitHub Action `.github/workflows/pmd-analysis.yml` enforces rules from `pmd-ruleset.xml`.
+- Prettier/ESLint: Code style enforced via `.prettierrc`, `.prettierignore`, and `eslint.config.js`.
+- Jest: LWC unit tests ready via `jest.config.js`.
+
+Run PMD locally (via npm script if configured) or rely on CI workflow.
+
+---
+
+## 🚀 Setup and Deployment
+
+Prerequisites
+- Node.js 18+
+- Salesforce CLI (sf)
+- VS Code with Salesforce extensions
+
+Clone
+```bash
+git clone https://github.com/k4zludk3/sfdc-enterprise-om.git
+cd sfdc-enterprise-om
+```
+
+Authorize an org
+```bash
+sf org login web --alias my-org
+sf org display --target-org my-org
+```
+
+Deploy metadata
+```bash
+# Deploy everything in force-app; include tests if preferred
+sf project deploy start --target-org my-org --source-dir force-app
+```
+
+Run Apex tests (examples)
+```bash
+# Run all local tests
+sf apex run test --target-org my-org --test-level RunLocalTests
+
+# Run specific tests
+sf apex run test --target-org my-org --tests OrderControllerTest
+```
+
+Retrieve (optional)
+```bash
+sf project retrieve start --target-org my-org --source-dir force-app
+```
+
+Scratch org (optional)
+```bash
+sf org create scratch --definition-file config/project-scratch-def.json --alias om-scratch --duration-days 7 --set-default
+sf project deploy start --target-org om-scratch --source-dir force-app
+```
+
+Note: This project follows modern `sf` CLI commands.
+
+---
+
+## ✅ Quick Verification (Anonymous Apex)
+
+Use Developer Console → Execute Anonymous:
+
+```apex
+// Create a synthetic Order (replace AccountId with a valid Id)
 Order vipOrder = new Order(
-    AccountId = '001...', // Add valid Account ID
+    AccountId = '001XXXXXXXXXXXXXXX',
     Status = 'Draft',
     EffectiveDate = Date.today(),
     Type = 'VIP' // triggers VipPricingStrategy
 );
 insert vipOrder;
 
-// Activate to trigger the Service Layer logic
 vipOrder.Status = 'Activated';
 update vipOrder;
 
-// Verify Result
 Order res = [SELECT Description FROM Order WHERE Id = :vipOrder.Id];
-System.debug(res.Description); 
-// Expected Output: "Final Price: 85.00" (15% Discount applied)
+System.debug(res.Description);
+// Expected: "Final Price: 85.00" (15% discount applied)
 ```
 
------
+---
 
-### 👤 Author
+## 🧪 Testing Matrix
 
-**Lucas Duque**
+- Apex Unit Tests: `OrderControllerTest.cls` (extend with service, domain, and strategy tests)
+- LWC Unit Tests: `orderList/__tests__/orderList.test.js`
+- Static Analysis: PMD via GitHub Actions
+- Optional: Add Apex PMD/Code Analyzer to pre-commit pipeline
 
-  * Senior Salesforce Developer | Architect Mindset
-  * Focus: Scalable Apex, LWC, Enterprise Patterns
-  * [LinkedIn Profile](https://www.linkedin.com/in/lucasduque97/)
+---
 
-<!-- end list -->
+## 🗺 Extensibility Guide
 
+Add a new pricing strategy:
+1) Create `BlackFridayPriceStrategy.cls` implementing `IPricingStrategy`.
+2) Register logic in `PricingStrategyFactory` (switch/if by context or metadata).
+3) Add unit tests for the new strategy.
+4) Deploy and validate via existing service flows.
+
+Introduce a new domain behavior:
+1) Extend `TriggerHandler` and override only needed methods.
+2) Route via `TriggerDispatcher` from the trigger.
+3) Keep DML and logic in service classes for reusability.
+
+---
+
+## 🧰 Scripts
+
+- `scripts/apex/hello.apex`: Sample anonymous apex script.
+- `scripts/soql/account.soql`: Sample SOQL query.
+
+Run a script:
+```bash
+sf apex run --target-org my-org --file scripts/apex/hello.apex
 ```
-```
+
+---
+
+## 🔐 Security Considerations
+
+- Enforce FLS and CRUD checks in service/controller as needed for your org.
+- Respect sharing with `with sharing` or `inherited sharing` per class role.
+- Avoid exposing internal exceptions; use `CustomException` and `Logger`.
+
+---
+
+## 🤝 Contributing
+
+1) Fork the repo
+2) Create a feature branch
+3) Commit with conventional messages
+4) Open a PR describing architecture impact and tests
+
+---
+
+## 👤 Author
+
+Lucas Duque
+- Senior Salesforce Developer
+- Focus: Scalable Apex, LWC, Enterprise Patterns
+- LinkedIn: https://www.linkedin.com/in/lucasduque97/
+
+---
+
+## 📄 License
+
+MIT License. See LICENSE file if present or the badge link above.
