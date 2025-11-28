@@ -4,7 +4,7 @@
  * @author Lucas Duque
  * @group Service
  */
-public with sharing class OrderService {
+public with sharing class OrderService implements IOrderService {
 
 
     /**
@@ -12,7 +12,7 @@ public with sharing class OrderService {
      * Uses 'Fire and Forget' pattern.
      * @param orders List of activated orders
      */
-    public static void publishOrderFinalized(List<Order> orders) {
+    public void publishOrderFinalized(List<Order> orders) {
         List<Order_Notification__e> notifications = new List<Order_Notification__e>();
 
         for (Order ord : orders) {
@@ -43,7 +43,7 @@ public with sharing class OrderService {
      * Processes pricing for a list of orders.
      * @param orders List of Orders from Trigger or API
     */
-    public static List<Order> calculatePricing(List<Order> orders) {
+    public List<Order> calculatePricing(List<Order> orders) {
         try {
             Logger.info('OrderService', 'Starting pricing calculation for ' + orders.size() + ' orders.');
 
