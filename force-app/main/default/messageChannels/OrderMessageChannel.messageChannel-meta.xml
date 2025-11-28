@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningMessageChannel xmlns="http://soap.sforce.com/2006/04/metadata">
+    <masterLabel>OrderMessageChannel</masterLabel>
+    <isExposed>true</isExposed>
+    <description>Broadcasts Order selections via LMS</description>
+    <lightningMessageFields>
+        <fieldName>orderId</fieldName>
+        <description>Selected Order Id</description>
+    </lightningMessageFields>
+</LightningMessageChannel>

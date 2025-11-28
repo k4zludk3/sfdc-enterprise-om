@@ -11,6 +11,7 @@ public with sharing class OrderController {
             return new selector.selectRecentOrders(5);
             
         } catch (Exception e) {
+            Logger.error('OrderController.getRecentOrders', e);
             throw new AuraHandledException(e.getMessage());
         }
     }
