@@ -3,6 +3,7 @@
  * Manages lists of records to insert/update/delete and commits them in a single transaction.
  * Implements IUnitOfWork for Mocking capabilities.
  */
+@SupressWarnings('PMD.ApexCRUDViolation')
 public inherited sharing class UnitOfWork implements IUnitOfWork {
     
     private List<SObject> newRecords = new List<SObject>();

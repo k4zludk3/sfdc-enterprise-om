@@ -2,6 +2,7 @@
 public class OrderControllerTest {
     
     @isTest
+    @SupressWarnings('PMD.AvoidHardcodingId')
     static void getRecentOrders_UsingStub() {
         // Create fake data
         Order o = new Order(
@@ -22,10 +23,12 @@ public class OrderControllerTest {
         Application.Selector.setMock(OrderSelector.class, stubSelector);
 
         // Act: Call the controller
-        Test.startTest();
-        List<Order> recentOrders = OrderController.getRecentOrders();   
-        Test.stopTest();
-
+        System.runAs(new User(UserInfo.getUserId())) {
+            Test.startTest();
+            List<Order> recentOrders = OrderController.getRecentOrders();   
+            Test.stopTest();
+        }
+        
         // Assert
         Assert.areEqual(1, recentOrders.size(), 'Should return one order');
         Assert.areEqual('ORD-001', recentOrders[0].OrderNumber, 'OrderNumber should match');
