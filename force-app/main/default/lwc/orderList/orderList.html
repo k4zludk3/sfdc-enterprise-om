@@ -1,0 +1,31 @@
+<template>
+    <lightning-card title="Recent Orders (Publisher)" icon-name="standard:orders">
+        <div class="slds-p-around_medium">
+            
+            <template lwc:if={orders.data}>
+                <ul class="slds-has-dividers_around-space">
+                    
+                    <template for:each={orders.data} for:item="ord">
+                        <li key={ord.Id} class="slds-item">
+                            
+                            <a href="#" onclick={handleSelect} data-id={ord.Id}>
+                                {ord.OrderNumber}
+                            </a>
+                            
+                            <div class="slds-float_right">
+                                <span class="slds-badge">{ord.Status}</span>
+                                <span class="slds-m-left_small">${ord.TotalAmount}</span>
+                            </div>
+                        </li>
+                    </template>
+
+                </ul>
+            </template>
+
+            <template lwc:if={orders.error}>
+                <p class="slds-text-color_error">Error loading orders.</p>
+            </template>
+
+        </div>
+    </lightning-card>
+</template>

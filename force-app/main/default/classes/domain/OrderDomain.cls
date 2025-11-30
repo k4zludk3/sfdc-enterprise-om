@@ -10,8 +10,9 @@ public inherited sharing class OrderDomain extends TriggerHandler {
     private IOrderService service {
         get {
             if (service == null) {
-                service = Application.Service.newInstance(OrderService.class);
+                service = (IOrderService) Application.Service.newInstance(OrderService.class);
             }
+            return service;
         }
         set;
     }
@@ -27,7 +28,7 @@ public inherited sharing class OrderDomain extends TriggerHandler {
     // Constructor B: For Unit Tests (Testable)
     // We can inject fake lists here
     public OrderDomain(List<Order> newRecords, Map<Id, Order> oldRecordMap) {
-        this.order = newRecords;
+        this.orders = newRecords;
         this.oldOrderByIdMap = oldRecordMap;
     }
 
@@ -45,7 +46,7 @@ public inherited sharing class OrderDomain extends TriggerHandler {
 
     public override void afterUpdate(Map<Id, SObject> newItems, Map<Id, SObject> oldItems) {
         // Publish event if order status changed to 'Finalized'
-        this.service.publishOrderFinalized(validateUpdatedStatus(ordersNew, oldItems));
+        this.service.publishOrderFinalized(validateUpdatedStatus(this.orders, this.oldOrderByIdMap));
     }
 
     // --- DOMAIN LOGIC METHODS --- //

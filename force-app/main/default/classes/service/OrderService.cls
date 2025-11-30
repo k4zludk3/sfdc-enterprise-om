@@ -48,9 +48,12 @@ public with sharing class OrderService implements IOrderService {
             Logger.info('OrderService', 'Starting pricing calculation for ' + orders.size() + ' orders.');
 
             for (Order o : orders) {
-                String customerType = o.Customer_Type__c; // Assume a custom field indicating customer type
+                String customerType = o.Account.Type; // Assume a custom field indicating customer type
+                if (customerType == null) {
+                    customerType = 'Standard'; // Default type
+                }
                 IPricingStrategy priceStrategy = PricingStrategyFactory.getPricingStrategy(customerType);
-                o.Description = 'Final price ' + priceStrategy.calculatePrice(o.Subtotal__c); // Just an example field
+                o.Description = 'Final price ' + priceStrategy.calculatePrice(o.TotalAmount); // Just an example field
             }
 
             Logger.info('OrderService', 'Completed pricing calculation successfully.');
@@ -67,14 +70,14 @@ public with sharing class OrderService implements IOrderService {
      * Processes a list of orders: Validates them and calculates dynamic pricing.
      * @param orders List of Orders from Lightning Component
     */
-    @AuraEnabled
+    /*@AuraEnabled
     public static void processOrders(List<Order> orders) {
         try {
 
             Logger.info('OrderService', 'Starting order processing for ' + orders.size() + ' orders.');
 
             // Domain validation
-            OrderDomain.validate(orders);
+            //OrderDomain.validate(orders);
 
             // Pricing strategy application
             List<Order> ordersUpdate = this.calculatePricing(orders);
@@ -98,7 +101,7 @@ public with sharing class OrderService implements IOrderService {
 
         } catch (Exception e) {
             Logger.error('OrderService.processOrders', e);
-            throw AuraHandledException(e.getMessage());
+            throw new AuraHandledException(e.getMessage());
         }
-    }
+    }*/
 }
