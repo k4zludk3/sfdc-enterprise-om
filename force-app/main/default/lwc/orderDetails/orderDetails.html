@@ -1,0 +1,85 @@
+<template>
+    <lightning-card title="Order Details" icon-name="standard:orders">
+        <!-- Empty state -->
+        <template if:false={hasSelection}>
+            <div class="slds-p-around_medium slds-text-color_weak">
+                Select an order from the list to view details.
+            </div>
+        </template>
+
+        <!-- Loading state -->
+        <template if:true={loading}>
+            <div class="slds-p-around_medium">
+                <lightning-spinner alternative-text="Loading order details" size="small"></lightning-spinner>
+            </div>
+        </template>
+
+        <!-- Error state -->
+        <template if:true={error}>
+            <div class="slds-p-around_medium">
+                <!--<c-inline-error message={error}></c-inline-error>-->
+                <p class="slds-text-color_error">Error loading orders.</p>
+            </div>
+        </template>
+
+        <!-- Details -->
+        <template if:true={order}>
+            <div class="slds-p-around_medium slds-grid slds-wrap slds-gutters">
+                <div class="slds-col slds-size_1-of-1">
+                    <lightning-layout vertical-align="stretch" multiple-rows>
+                        <lightning-layout-item size="12" small-device-size="12" medium-device-size="6" large-device-size="6">
+                            <lightning-output-field variant="label-inline">
+                                <span class="slds-form-element__label">Order Number</span>
+                                <div class="slds-form-element__control">
+                                    <lightning-formatted-text value={order.OrderNumber}></lightning-formatted-text>
+                                </div>
+                            </lightning-output-field>
+                        </lightning-layout-item>
+                        <lightning-layout-item size="12" small-device-size="12" medium-device-size="6" large-device-size="6">
+                            <lightning-output-field variant="label-inline">
+                                <span class="slds-form-element__label">Status</span>
+                                <div class="slds-form-element__control">
+                                    <lightning-formatted-text value={order.Status}></lightning-formatted-text>
+                                </div>
+                            </lightning-output-field>
+                        </lightning-layout-item>
+
+                        <lightning-layout-item size="12" small-device-size="12" medium-device-size="6" large-device-size="6">
+                            <lightning-output-field variant="label-inline">
+                                <span class="slds-form-element__label">Account</span>
+                                <div class="slds-form-element__control">
+                                    <lightning-formatted-text value={order.Account.Name}></lightning-formatted-text>
+                                </div>
+                            </lightning-output-field>
+                        </lightning-layout-item>
+                        <lightning-layout-item size="12" small-device-size="12" medium-device-size="6" large-device-size="6">
+                            <lightning-output-field variant="label-inline">
+                                <span class="slds-form-element__label">Owner</span>
+                                <div class="slds-form-element__control">
+                                    <lightning-formatted-text value={order.Owner.Name}></lightning-formatted-text>
+                                </div>
+                            </lightning-output-field>
+                        </lightning-layout-item>
+
+                        <lightning-layout-item size="12" small-device-size="12" medium-device-size="6" large-device-size="6">
+                            <lightning-output-field variant="label-inline">
+                                <span class="slds-form-element__label">Effective Date</span>
+                                <div class="slds-form-element__control">
+                                    <lightning-formatted-date-time value={order.EffectiveDate} year="numeric" month="short" day="2-digit"></lightning-formatted-date-time>
+                                </div>
+                            </lightning-output-field>
+                        </lightning-layout-item>
+                        <lightning-layout-item size="12" small-device-size="12" medium-device-size="6" large-device-size="6">
+                            <lightning-output-field variant="label-inline">
+                                <span class="slds-form-element__label">Total Amount</span>
+                                <div class="slds-form-element__control">
+                                    <lightning-formatted-number value={order.TotalAmount} maximum-fraction-digits="2" minimum-fraction-digits="2" format-style="currency"></lightning-formatted-number>
+                                </div>
+                            </lightning-output-field>
+                        </lightning-layout-item>
+                    </lightning-layout>
+                </div>
+            </div>
+        </template>
+    </lightning-card>
+</template>
