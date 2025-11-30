@@ -6,6 +6,6 @@
  * @author Lucas Duque
  * @group Patterns
  */
-public with sharing interface IPricingStrategy {
+public interface IPricingStrategy {
     Decimal calculatePrice(Decimal subTotal);
 }

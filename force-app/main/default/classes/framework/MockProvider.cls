@@ -19,7 +19,7 @@ public class MockProvider implements System.StubProvider {
         List<Object> listOfArgs
     ) {
         //if we defined a return value for this method, return it
-        if (returnValeus.containsKey(stubbedMethodName)) {
+        if (returnValues.containsKey(stubbedMethodName)) {
             return returnValues.get(stubbedMethodName);
         }
 

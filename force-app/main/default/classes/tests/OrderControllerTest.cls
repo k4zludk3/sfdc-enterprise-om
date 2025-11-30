@@ -7,8 +7,6 @@ public class OrderControllerTest {
         // Create fake data
         Order o = new Order(
             Id = '801000000000001AAA',
-            OrderNumber = 'ORD-001',
-            TotalAmount = 1000,
             Status = 'Actived'
         );
 
@@ -23,14 +21,15 @@ public class OrderControllerTest {
         Application.Selector.setMock(OrderSelector.class, stubSelector);
 
         // Act: Call the controller
-        System.runAs(new User(UserInfo.getUserId())) {
+        List<Order> recentOrders;
+        System.runAs(new User(Id = UserInfo.getUserId())) {
             Test.startTest();
-            List<Order> recentOrders = OrderController.getRecentOrders();   
+            recentOrders = OrderController.getRecentOrders();
             Test.stopTest();
         }
         
         // Assert
         Assert.areEqual(1, recentOrders.size(), 'Should return one order');
-        Assert.areEqual('ORD-001', recentOrders[0].OrderNumber, 'OrderNumber should match');
+        Assert.areEqual('Actived', recentOrders[0].Status, 'Status should match');
     }
 }
