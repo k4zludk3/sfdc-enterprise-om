@@ -1,0 +1,15 @@
+flowchart LR
+    AccountTrigger[AccountTrigger.trigger] --> Dispatcher[TriggerDispatcher]
+    OrderTrigger[OrderTrigger.trigger] --> Dispatcher
+
+    subgraph Trigger Framework
+        Dispatcher --> Handler[TriggerHandler]
+        Handler --> ITriggerHandler[ITriggerHandler]
+        Handler --> Application[Application]
+        Handler --> UnitOfWork[UnitOfWork]
+        Handler --> RecursionCheck[RecursionCheck]
+        Handler --> Logger[Logger]
+    end
+
+    Handler --> Domain[Domain Classes]
+    Handler --> Services[Service Classes]
