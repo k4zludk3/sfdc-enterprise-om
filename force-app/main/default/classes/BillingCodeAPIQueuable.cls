@@ -12,10 +12,10 @@ public with sharing class BillingCodeAPIQueuable implements Queueable, Database.
 
     public void execute(QueueableContext context) {
         // 3. Query the Accounts again to ensure data is fresh
-        List<Account> accsToProcess = [SELECT Id, BillingPostalCode 
+        List<Account> acctsToProcess = [SELECT Id, BillingPostalCode 
                                         FROM Account 
                                         WHERE Id IN :accountIds];
-        List<Account> accsToUpdate = new List<Account>();
+        List<Account> acctsToUpdate = new List<Account>();
         Set<Id> processedAccountIds = new Set<Id>(); 
 
         for (Account acct : acctsToProcess) {
@@ -28,11 +28,11 @@ public with sharing class BillingCodeAPIQueuable implements Queueable, Database.
 
             processedAccountIds.add(acct.Id);
 
-            if (String.isBlank(acc.BillingPostalCode)) continue;
+            if (String.isBlank(acct.BillingPostalCode)) continue;
 
             // Prepare the Request
             // Remove the hyphen for the URL if ViaCEP expects numbers (ViaCEP accepts both, but cleaning is good practice)
-            String cleanCep = acc.BillingPostalCode.replace('-', '').trim();
+            String cleanCep = acct.BillingPostalCode.replace('-', '').trim();
 
             HttpRequest req = new HttpRequest();
             // No hardcoded URLs
@@ -45,36 +45,35 @@ public with sharing class BillingCodeAPIQueuable implements Queueable, Database.
 
             try {
                 // Callout (Inside loop - see warning below)
-                HttpResponse res = http.send(req);
+                HttpResponse response = http.send(req);
 
-                if (res.getStatusCode() == 200) {
+                if (response.getStatusCode() == 200) {
                     // Parse the JSON response
                     // ViaCEP returns: {"cep": "01001-000", "logradouro": "Praça da Sé", ...}
-                    Map<String, Object> responseMap = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
+                    Map<String, Object> responseAPI = (Map<String, Object>) JSON.deserializeUntyped(response.getBody());
 
                     // Check if API returned an error (ViaCEP returns { "erro": true } for invalid CEPs)
-                    if (results.containsKey('erro') && (Boolean) results.get('erro')) {
-                        Logger.warn('BillingCodeAPIQueuable', 'Invalid postal code: ' + cleanCep);
+                    if (responseAPI.containsKey('erro') && (Boolean) responseAPI.get('erro')) {
+                        Logger.warning('BillingCodeAPIQueuable', 'Invalid postal code: ' + cleanCep);
                         continue; // Skip to next account
                     }
 
                     // Update the Account fields based on API response
-                    acct.BillingStreet = (String) responseMap.get('logradouro');
-                    acct.BillingCity = (String) responseMap.get('localidade');
-                    acct.BillingState = (String) responseMap.get('uf');
+                    acct.BillingStreet = (String) responseAPI.get('logradouro');
+                    acct.BillingCity = (String) responseAPI.get('localidade');
+                    acct.BillingState = (String) responseAPI.get('uf');
                     acct.BillingCountry = 'Brasil'; // Assuming all addresses are in Brazil for this example
-                    accsToUpdate.add(acct);
-                    acctsToProcess.remove(acct);
+                    acctsToUpdate.add(acct);
                 } else {
-                    Logger.error('BillingCodeAPIQueuable', 'Failed to retrieve data for postal code: ' + cleanCep + '. Status Code: ' + res.getStatusCode());
+                    Logger.warning('BillingCodeAPIQueuable', 'Failed to retrieve data for postal code: ' + cleanCep + '. Status Code: ' + response.getStatusCode());
                 } 
             } catch (Exception e) {
-                Logger.error('BillingCodeAPIQueuable', 'Exception during callout for postal code: ' + cleanCep + '. Error: ' + e.getMessage());
+                Logger.error('BillingCodeAPIQueuable exception during callout for postal code: ' + cleanCep, e);
             }
         }
 
         // Update what were finished on this transaction
-        if (!accsToUpdate.isEmpty()) {
+        if (!acctsToUpdate.isEmpty()) {
             update acctsToUpdate;
         }
 

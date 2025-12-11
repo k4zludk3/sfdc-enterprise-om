@@ -1,8 +1,8 @@
-public with sharing class PostalCodeStrategyFactory {
+public inherited sharing class PostalCodeStrategyFactory {
 
     public static IPostalCodeStrategy getStrategy(String country) {
         switch on country {
-            when String.equalsIgnoreCase('Brazil') {
+            when 'Brazil' {
                 return new BrazilPostalCodeStrategy();
             } 
             when else {
