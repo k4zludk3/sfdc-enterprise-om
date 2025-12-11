@@ -8,13 +8,15 @@
  * * @author Lucas Duque
  * @group Framework
  */
-public inherited sharing class TriggerDispatcher {
+public with sharing class TriggerDispatcher {
 
     /**
      * @description Main entry point. called by the Trigger to route logic.
      * @param handler An instance of the Domain class (must implement ITriggerHandler)
      */
     public static void run(ITriggerHandler handler) {
+        // Set the trigger records in the handler
+        handler.setTriggerContextRecords(Trigger.newMap, Trigger.oldMap);
         // Detect the current context automatically
         switch on Trigger.operationType {
             when BEFORE_INSERT {

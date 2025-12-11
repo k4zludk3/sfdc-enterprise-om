@@ -7,12 +7,42 @@
  * @group Framework
  */
 @SuppressWarnings('PMD.EmptyStatementBlock')
-public virtual class TriggerHandler implements ITriggerHandler {
-    public virtual void beforeInsert(List<SObject> newRecords) {}
-    public virtual void beforeUpdate(Map<Id, SObject> newItems, Map<Id, SObject> oldItems) {}
-    public virtual void beforeDelete(Map<Id, SObject> oldItems) {}
-    public virtual void afterInsert(Map<Id, SObject> newItems) {}
-    public virtual void afterUpdate(Map<Id, SObject> newItems, Map<Id, SObject> oldItems) {}
-    public virtual void afterDelete(Map<Id, SObject> oldItems) {}
-    public virtual void afterUndelete(Map<Id, SObject> oldItems) {}
+public abstract class TriggerHandler {
+    public abstract void setContextTriggerRecords(Map<Id, SObject> newRecordsById, Map<Id, SObject> oldRecordsById);
+    public virtual void beforeInsert() {}
+    public virtual void beforeUpdate() {}
+    public virtual void beforeDelete() {}
+    public virtual void afterInsert() {}
+    public virtual void afterUpdate() {}
+    public virtual void afterDelete() {}
+    public virtual void afterUndelete() {}
+    
+    public virtual void run() {
+        
+        this.setContextTriggerRecords(Trigger.newMap, Trigger.oldMap);
+
+        switch on Trigger.operationType {
+            when BEFORE_INSERT {
+                this.beforeInsert();
+            }
+            when BEFORE_UPDATE {
+                this.beforeUpdate();
+            }
+            when BEFORE_DELETE {
+                this.beforeDelete();
+            }
+            when AFTER_INSERT {
+                this.afterInsert();
+            }
+            when AFTER_UPDATE {
+                this.afterUpdate();
+            }
+            when AFTER_DELETE {
+                this.afterDelete();
+            }
+            when AFTER_UNDELETE {
+                this.afterUndelete();
+            }
+        }
+    }
 }
