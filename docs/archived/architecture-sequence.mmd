@@ -1,0 +1,27 @@
+sequenceDiagram
+    participant LWC as LWC (orderList/orderDetails)
+    participant CTRL as Apex OrderController
+    participant SVC as OrderService
+    participant SEL as OrderSelector
+    participant DOM as OrderDomain
+    participant UOW as UnitOfWork
+    participant STRAT as PricingStrategyFactory/Standard/Vip
+    participant PSTRAT as PostalCodeStrategyFactory/BrazilPostalCodeStrategy
+    participant QUEUE as BillingCodeAPIQueuable
+    participant EVT as Order_Notification__e
+
+    LWC->>CTRL: @AuraEnabled(call)
+    CTRL->>UOW: start()
+    CTRL->>SVC: execute business operation
+    SVC->>SEL: query data per selector pattern
+    SVC->>DOM: apply domain rules
+    SVC->>STRAT: select pricing strategy
+    STRAT-->>SVC: price calculation
+    SVC->>PSTRAT: postal code validation/normalization
+    PSTRAT-->>SVC: result
+    SVC->>UOW: register DML via Unit of Work
+    SVC->>EVT: publish Order_Notification__e (optional)
+    SVC->>QUEUE: enqueue external billing update (optional)
+    SVC-->>CTRL: result DTO
+    CTRL->>UOW: commit()
+    CTRL-->>LWC: return data

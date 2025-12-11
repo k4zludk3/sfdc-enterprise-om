@@ -1,5 +1,5 @@
 {
-  "orgName": "Demo company",
+  "orgName": "BRQ Enterprise Demo",
   "edition": "Developer",
   "features": ["EnableSetPasswordInApi"],
   "settings": {
@@ -8,6 +8,12 @@
     },
     "mobileSettings": {
       "enableS1EncryptedStoragePref2": false
+    },
+    "securitySettings": {
+      "passwordPolicies": {
+        "complexity": "NoRestriction",
+        "expiration": "Never"
+      }
     }
   }
 }

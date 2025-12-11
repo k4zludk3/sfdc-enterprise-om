@@ -1,0 +1,17 @@
+classDiagram
+    class IPricingStrategy {
+      +calculatePrice(order) Decimal
+    }
+    class StandardPriceStrategy {
+      +calculatePrice(order) Decimal
+    }
+    class VipPriceStrategy {
+      +calculatePrice(order) Decimal
+    }
+    class PricingStrategyFactory {
+      +for(order): IPricingStrategy
+    }
+
+    IPricingStrategy <|.. StandardPriceStrategy
+    IPricingStrategy <|.. VipPriceStrategy
+    PricingStrategyFactory --> IPricingStrategy

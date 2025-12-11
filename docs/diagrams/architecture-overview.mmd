@@ -1,0 +1,110 @@
+%% Consolidated architecture overview (from previous architecture.md, architecture-flow.mmd content)
+
+flowchart TD
+    subgraph Presentation
+        LWCOrderList[orderList LWC]
+        LWCOrderDetails[orderDetails LWC]
+        MsgChannel[OrderMessageChannel]
+    end
+
+    subgraph Apex_Controllers
+        OrderCtrl[OrderController.cls]
+    end
+
+    subgraph Domain_Layer
+        OrderDomain[OrderDomain.cls]
+        AccountDomain[AccountDomain.cls]
+    end
+
+    subgraph Service_Layer
+        OrderService[OrderService.cls]
+        AccountService[AccountService.cls]
+    end
+
+    subgraph Selector_Layer
+        OrderSelector[OrderSelector.cls]
+    end
+
+    subgraph Strategy_Pattern
+        PricingFactory[PricingStrategyFactory.cls]
+        StandardPricing[StandardPriceStrategy.cls]
+        VipPricing[VipPriceStrategy.cls]
+        IPricing[IPricingStrategy.cls]
+    end
+
+    subgraph Postal_Code_Strategy
+        PostalFactory[PostalCodeStrategyFactory.cls]
+        BrazilPostalStrategy[BrazilPostalCodeStrategy.cls]
+        IPostalCodeStrategy[IPostalCodeStrategy.cls]
+    end
+
+    subgraph Framework
+        Application[Application.cls]
+        TriggerDispatcher[TriggerDispatcher.cls]
+        TriggerHandler[TriggerHandler.cls]
+        ITriggerHandler[ITriggerHandler.cls]
+        UnitOfWork[UnitOfWork.cls]
+        IUnitOfWork[IUnitOfWork.cls]
+        MockProvider[MockProvider.cls]
+        RecursionCheck[RecursionCheck.cls]
+        Logger[Logger.cls]
+        CustomException[CustomException.cls]
+    end
+
+    subgraph Triggers
+        AccountTrigger[AccountTrigger.trigger]
+        OrderTrigger[OrderTrigger.trigger]
+    end
+
+    subgraph Platform_Events
+        OrderEvt[Order_Notification__e]
+    end
+
+    subgraph Integrations_Async
+        BillingCodeQ[BillingCodeAPIQueuable.cls]
+    end
+
+    %% Presentation to Controller and Message Channel
+    LWCOrderList --> OrderCtrl
+    LWCOrderDetails --> OrderCtrl
+    LWCOrderList <---> MsgChannel
+    LWCOrderDetails <---> MsgChannel
+
+    %% Controller to Domain/Service
+    OrderCtrl --> OrderService
+    OrderCtrl --> OrderDomain
+    OrderCtrl --> UnitOfWork
+
+    %% Service uses Selector, Domain, Strategies, UoW, Utils
+    OrderService --> OrderSelector
+    OrderService --> OrderDomain
+    OrderService --> PricingFactory
+    OrderService --> PostalFactory
+    OrderService --> UnitOfWork
+    OrderService --> Logger
+    OrderService -.-> CustomException
+    OrderService --> BillingCodeQ
+    OrderService -.-> OrderEvt
+
+    %% Pricing strategy factory to concrete strategies
+    PricingFactory --> IPricing
+    PricingFactory --> StandardPricing
+    PricingFactory --> VipPricing
+
+    %% Postal code strategy
+    PostalFactory --> IPostalCodeStrategy
+    PostalFactory --> BrazilPostalStrategy
+
+    %% Triggers use dispatcher and handlers
+    AccountTrigger --> TriggerDispatcher
+    OrderTrigger --> TriggerDispatcher
+    TriggerDispatcher --> TriggerHandler
+    TriggerHandler --> ITriggerHandler
+    TriggerHandler --> Application
+    TriggerHandler --> UnitOfWork
+    TriggerHandler --> RecursionCheck
+    TriggerHandler --> Logger
+
+    %% Domain depends on Utils
+    OrderDomain --> Logger
+    AccountDomain --> Logger
