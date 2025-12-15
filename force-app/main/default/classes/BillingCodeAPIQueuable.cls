@@ -11,12 +11,11 @@ public with sharing class BillingCodeAPIQueuable implements Queueable, Database.
     }
 
     public void execute(QueueableContext context) {
-        // 3. Query the Accounts again to ensure data is fresh
-        List<Account> acctsToProcess = [SELECT Id, BillingPostalCode 
-                                        FROM Account 
-                                        WHERE Id IN :accountIds];
         List<Account> acctsToUpdate = new List<Account>();
-        Set<Id> processedAccountIds = new Set<Id>(); 
+        Set<Id> processedAccountIds = new Set<Id>();
+        // Query the Accounts again to ensure data is fresh 
+        IAccountSelector selector = (IAccountSelector) Application.Selector.newInstance(AccountSelector.class);
+        List<Account> acctsToProcess = selector.selectAccountsById(this.accountIds);
 
         for (Account acct : acctsToProcess) {
         
@@ -34,57 +33,34 @@ public with sharing class BillingCodeAPIQueuable implements Queueable, Database.
             // Remove the hyphen for the URL if ViaCEP expects numbers (ViaCEP accepts both, but cleaning is good practice)
             String cleanCep = acct.BillingPostalCode.replace('-', '').trim();
 
-            HttpRequest req = new HttpRequest();
-            // No hardcoded URLs
-            // Use Named Credentials for better security and easier management, decoupling configuration from code
-            req.setEndpoint('callout:ViaCEP/ws' + cleanCep + '/json/');
-            req.setMethod('GET');
-            req.setTimeout(12000); // 12 seconds timeout
+            BillingCodeCalloutService calloutService = new BillingCodeCalloutService(cleanCep, 'GET');
 
-            Http http = new Http();
+            //Map<String, Object> response = (Map<String, Object>) calloutService.parseResponse();
+            BillingCodeDTO billingCodeInfo = (BillingCodeDTO) JSON.deserialize(calloutService.makeCallout(), BillingCodeDTO.class);             
 
-            try {
-                // Callout (Inside loop - see warning below)
-                HttpResponse response = http.send(req);
-
-                if (response.getStatusCode() == 200) {
-                    // Parse the JSON response
-                    // ViaCEP returns: {"cep": "01001-000", "logradouro": "Praça da Sé", ...}
-                    Map<String, Object> responseAPI = (Map<String, Object>) JSON.deserializeUntyped(response.getBody());
-
-                    // Check if API returned an error (ViaCEP returns { "erro": true } for invalid CEPs)
-                    if (responseAPI.containsKey('erro') && (Boolean) responseAPI.get('erro')) {
-                        Logger.warning('BillingCodeAPIQueuable', 'Invalid postal code: ' + cleanCep);
-                        continue; // Skip to next account
-                    }
-
-                    // Update the Account fields based on API response
-                    acct.BillingStreet = (String) responseAPI.get('logradouro');
-                    acct.BillingCity = (String) responseAPI.get('localidade');
-                    acct.BillingState = (String) responseAPI.get('uf');
-                    acct.BillingCountry = 'Brasil'; // Assuming all addresses are in Brazil for this example
-                    acctsToUpdate.add(acct);
-                } else {
-                    Logger.warning('BillingCodeAPIQueuable', 'Failed to retrieve data for postal code: ' + cleanCep + '. Status Code: ' + response.getStatusCode());
-                } 
-            } catch (Exception e) {
-                Logger.error('BillingCodeAPIQueuable exception during callout for postal code: ' + cleanCep, e);
+            if (billingCodeInfo != null) {
+                // Update the Account fields based on API response
+                IAccountService service = (AccountService) Application.Service.newInstance(AccountService.class);
+                Account acctUpdate = service.populateBillingCodeFromAPI(billingCodeInfo);
+                acctsToUpdate.add(acct);
+            } else {
+                Logger.warning('BillingCodeAPIQueuable', 'No data returned for postal code: ' + cleanCep);
             }
-        }
 
-        // Update what were finished on this transaction
-        if (!acctsToUpdate.isEmpty()) {
-            update acctsToUpdate;
-        }
+            // Update what were finished on this transaction
+            if (!acctsToUpdate.isEmpty()) {
+                update acctsToUpdate;
+            }
 
-        // Set subtraction 
-        // Remove the IDs we just processed from the main list
-        accountIds.removeAll(processedAccountIds);
+            // Set subtraction 
+            // Remove the IDs we just processed from the main list
+            accountIds.removeAll(processedAccountIds);
 
-        // If there are remaining IDs, enqueue another job
-        // !Test.isRunningTest() prevents infinite loops during Unit Tests (which fail if you chain jobs without protection).
-        if (!accountIds.isEmpty() && !Test.isRunningTest()) {
-            System.enqueueJob(new BillingCodeAPIQueuable(accountIds));
+            // If there are remaining IDs, enqueue another job
+            // !Test.isRunningTest() prevents infinite loops during Unit Tests (which fail if you chain jobs without protection).
+            if (!accountIds.isEmpty() && !Test.isRunningTest()) {
+                System.enqueueJob(new BillingCodeAPIQueuable(accountIds));
+            }
         }
     }
 }
