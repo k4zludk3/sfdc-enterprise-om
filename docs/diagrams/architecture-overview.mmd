@@ -1,3 +1,5 @@
+%% Consolidated architecture overview (from previous architecture.md, architecture-flow.mmd content)
+
 flowchart TD
     subgraph Presentation
         LWCOrderList[orderList LWC]
@@ -34,8 +36,6 @@ flowchart TD
         PostalFactory[PostalCodeStrategyFactory.cls]
         BrazilPostalStrategy[BrazilPostalCodeStrategy.cls]
         IPostalCodeStrategy[IPostalCodeStrategy.cls]
-        PostalCodeBrazil[PostalCodeBrazil.cls]
-        IPostalCode[IPostalCode.cls]
     end
 
     subgraph Framework
@@ -46,17 +46,14 @@ flowchart TD
         UnitOfWork[UnitOfWork.cls]
         IUnitOfWork[IUnitOfWork.cls]
         MockProvider[MockProvider.cls]
+        RecursionCheck[RecursionCheck.cls]
+        Logger[Logger.cls]
+        CustomException[CustomException.cls]
     end
 
     subgraph Triggers
         AccountTrigger[AccountTrigger.trigger]
         OrderTrigger[OrderTrigger.trigger]
-    end
-
-    subgraph Utils
-        Logger[Logger.cls]
-        CustomException[CustomException.cls]
-        RecursionCheck[RecursionCheck.cls]
     end
 
     subgraph Platform_Events
@@ -97,8 +94,6 @@ flowchart TD
     %% Postal code strategy
     PostalFactory --> IPostalCodeStrategy
     PostalFactory --> BrazilPostalStrategy
-    BrazilPostalStrategy --> PostalCodeBrazil
-    PostalCodeBrazil --> IPostalCode
 
     %% Triggers use dispatcher and handlers
     AccountTrigger --> TriggerDispatcher

@@ -1,0 +1,13 @@
+classDiagram
+    class IPostalCodeStrategy {
+      +isValidPostalCode(pc: String): Boolean
+    }
+    class BrazilPostalCodeStrategy {
+      +isValidPostalCode(pc: String): Boolean
+    }
+    class PostalCodeStrategyFactory {
+      +for(country: String): IPostalCodeStrategy
+    }
+
+    IPostalCodeStrategy <|.. BrazilPostalCodeStrategy
+    PostalCodeStrategyFactory --> IPostalCodeStrategy
